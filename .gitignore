@@ -20,6 +20,7 @@
 
 # RStudio files
 .Rproj.user/
+*.Rproj
 
 # produced vignettes
 vignettes/*.html
@@ -47,3 +48,15 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+# Large files from NHTS
+data/perpub.csv
+data/trippub.csv
+data/vehpub.csv
+
+# All the model subfolders except the readme file 
+model/outputs/
+model/code/
+model/inputs/
+model/ui
+
