@@ -50,9 +50,9 @@ po/*~
 rsconnect/
 
 # Large files from NHTS
-data/perpub.csv
-data/trippub.csv
-data/vehpub.csv
+data/NHTS/perpub.csv
+data/NHTS/trippub.csv
+data/NHTS/vehpub.csv
 
 # All the model subfolders except the readme file 
 model/outputs/
