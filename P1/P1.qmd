@@ -1,6 +1,9 @@
 ---
 title: "P1: Vehicle Availability"
-format: html
+format: 
+  html:
+    toc: true
+    toc-location: left
 editor: visual
 ---
 
@@ -48,6 +51,7 @@ This analysis uses household-level data from the 2017 National Household Travel 
 
 ```{r}
 hh_data <- here("data",
+                "NHTS",
                 "hhpub.csv") |>
   read_csv(show_col_types = FALSE)
 ```
@@ -58,7 +62,8 @@ Once you've done that, you can load person-level data.
 
 ```{r}
 person_data <- here("data",
-                   "perpub.csv") |>
+                    "NHTS",
+                    "perpub.csv") |>
   read_csv(show_col_types = FALSE)
 ```
 
@@ -470,7 +475,7 @@ head(predicts_test) |>
   kable()
 ```
 
-## Checking model reliabilty and accuracy
+## Checking model reliability and accuracy
 
 Now we can check how accurate and reliable our model is on the test dataset. First, I'll designate the alternative with the highest predicted probability as the "most likely" choice.
 
@@ -501,7 +506,7 @@ confusionMatrix(data = predicts_test$most_likely,
                 reference = predicts_test$veh_avail)
 ```
 
-Interpreting the overall statistics:
+Interpreting the overall statistics (see the documentation for the ConfusionMatrix function here: <https://cran.r-project.org/web/packages/caret/caret.pdf>):
 
 -   **Accuracy** is the percent of observations (in this case, households) that are correctly classified.
 
@@ -521,11 +526,15 @@ Interpreting the statistics by class:
 
 -   **Prevalence** is the percent of observations in this category
 
+-   **Detection rate** (as used by the author of the Confusion Matrix function) is the frequency with which this category is correctly predicted by the model.
+
+-   **Detection prevalence** (as used by the author of the Confusion Matrix function) is the frequency with which this category is predicted by the model.
+
 -   **Balanced accuracy** is the average of sensitivity and specificity
 
 ## Your challenge:
 
-Redo the above analysis. Your regression results are likely to slightly different than the above because you'll be using a different random number seed.
+Redo the above analysis. Your regression results are likely to slightly different than the above because you'll be using a different random number seed to draw the sample for your training dataset.
 
 Can you estimate a vehicle availability model that performs better than this one? You might try a different set of predictor variables and/or a different form of the ones in this model (for example, you could use a continuous density variable, or more density categories).
 

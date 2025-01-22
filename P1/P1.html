@@ -100,10 +100,46 @@ window.Quarto = {
 
 </head>
 
-<body class="fullcontent">
+<body>
 
-<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
-
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article toc-left">
+<div id="quarto-sidebar-toc-left" class="sidebar toc-left">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#load-libraries" id="toc-load-libraries" class="nav-link active" data-scroll-target="#load-libraries">Load libraries</a></li>
+  <li><a href="#load-dataset" id="toc-load-dataset" class="nav-link" data-scroll-target="#load-dataset">Load dataset</a></li>
+  <li><a href="#choose-variables" id="toc-choose-variables" class="nav-link" data-scroll-target="#choose-variables">Choose variables</a></li>
+  <li><a href="#construct-variables" id="toc-construct-variables" class="nav-link" data-scroll-target="#construct-variables">Construct variables</a>
+  <ul class="collapse">
+  <li><a href="#outcome-vehicle-availability" id="toc-outcome-vehicle-availability" class="nav-link" data-scroll-target="#outcome-vehicle-availability">Outcome: Vehicle availability</a></li>
+  <li><a href="#predictor-number-of-children" id="toc-predictor-number-of-children" class="nav-link" data-scroll-target="#predictor-number-of-children">Predictor: Number of children</a></li>
+  <li><a href="#predictor-number-of-seniors" id="toc-predictor-number-of-seniors" class="nav-link" data-scroll-target="#predictor-number-of-seniors">Predictor: Number of seniors</a></li>
+  <li><a href="#predictor-presence-of-third-driver" id="toc-predictor-presence-of-third-driver" class="nav-link" data-scroll-target="#predictor-presence-of-third-driver">Predictor: Presence of third driver</a></li>
+  <li><a href="#predictor-number-of-drivers-beyond-two" id="toc-predictor-number-of-drivers-beyond-two" class="nav-link" data-scroll-target="#predictor-number-of-drivers-beyond-two">Predictor: Number of drivers beyond two</a></li>
+  <li><a href="#predictor-income" id="toc-predictor-income" class="nav-link" data-scroll-target="#predictor-income">Predictor: Income</a></li>
+  <li><a href="#predictor-non-worker-driver" id="toc-predictor-non-worker-driver" class="nav-link" data-scroll-target="#predictor-non-worker-driver">Predictor: Non-worker driver</a></li>
+  <li><a href="#predictor-density" id="toc-predictor-density" class="nav-link" data-scroll-target="#predictor-density">Predictor: Density</a></li>
+  </ul></li>
+  <li><a href="#prepare-data" id="toc-prepare-data" class="nav-link" data-scroll-target="#prepare-data">Prepare data</a>
+  <ul class="collapse">
+  <li><a href="#drop-the-variables-you-wont-be-using" id="toc-drop-the-variables-you-wont-be-using" class="nav-link" data-scroll-target="#drop-the-variables-you-wont-be-using">Drop the variables you won’t be using</a></li>
+  <li><a href="#create-training-and-test-datasets" id="toc-create-training-and-test-datasets" class="nav-link" data-scroll-target="#create-training-and-test-datasets">Create training and test datasets</a></li>
+  <li><a href="#create-dfidx-data" id="toc-create-dfidx-data" class="nav-link" data-scroll-target="#create-dfidx-data">Create dfidx data</a></li>
+  </ul></li>
+  <li><a href="#estimate-model" id="toc-estimate-model" class="nav-link" data-scroll-target="#estimate-model">Estimate model</a></li>
+  <li><a href="#interpreting-model-results" id="toc-interpreting-model-results" class="nav-link" data-scroll-target="#interpreting-model-results">Interpreting model results</a>
+  <ul class="collapse">
+  <li><a href="#predicting-probabilities" id="toc-predicting-probabilities" class="nav-link" data-scroll-target="#predicting-probabilities">Predicting probabilities</a></li>
+  </ul></li>
+  <li><a href="#checking-model-reliability-and-accuracy" id="toc-checking-model-reliability-and-accuracy" class="nav-link" data-scroll-target="#checking-model-reliability-and-accuracy">Checking model reliability and accuracy</a></li>
+  <li><a href="#your-challenge" id="toc-your-challenge" class="nav-link" data-scroll-target="#your-challenge">Your challenge:</a></li>
+  </ul>
+</nav>
+</div>
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
+</div>
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
@@ -159,15 +195,17 @@ window.Quarto = {
 <p>This analysis uses household-level data from the 2017 National Household Travel Survey.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>hh_data <span class="ot">&lt;-</span> <span class="fu">here</span>(<span class="st">"data"</span>,</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>                <span class="st">"hhpub.csv"</span>) <span class="sc">|&gt;</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">read_csv</span>(<span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>                <span class="st">"NHTS"</span>,</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>                <span class="st">"hhpub.csv"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">read_csv</span>(<span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>The NHTS also includes person-level, trip-level, and vehicle-level datasets. You could use these to construct household-level variables if you want to, but they aren’t included in the GitHub repository because the files are larger than 50 MB. To use those files, go to <a href="https://nhts.ornl.gov/assets/2016/download/csv.zip" class="uri">https://nhts.ornl.gov/assets/2016/download/csv.zip</a>, extract the downloaded files, and save the four csv files (hhpub, perpub, trippub, and vehpub) to the “data” subfolder within the “examples” folder.</p>
 <p>Once you’ve done that, you can load person-level data.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>person_data <span class="ot">&lt;-</span> <span class="fu">here</span>(<span class="st">"data"</span>,</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>                   <span class="st">"perpub.csv"</span>) <span class="sc">|&gt;</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">read_csv</span>(<span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"NHTS"</span>,</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>                    <span class="st">"perpub.csv"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">read_csv</span>(<span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="choose-variables" class="level2">
@@ -682,8 +720,8 @@ Likelihood ratio test : chisq = 14831 (p.value = &lt; 2.22e-16)</code></pre>
 </div>
 </section>
 </section>
-<section id="checking-model-reliabilty-and-accuracy" class="level2">
-<h2 class="anchored" data-anchor-id="checking-model-reliabilty-and-accuracy">Checking model reliabilty and accuracy</h2>
+<section id="checking-model-reliability-and-accuracy" class="level2">
+<h2 class="anchored" data-anchor-id="checking-model-reliability-and-accuracy">Checking model reliability and accuracy</h2>
 <p>Now we can check how accurate and reliable our model is on the test dataset. First, I’ll designate the alternative with the highest predicted probability as the “most likely” choice.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>predicts_test <span class="ot">&lt;-</span> predicts_test <span class="sc">|&gt;</span></span>
@@ -737,7 +775,7 @@ Detection Prevalence       0.9659       0.004888     0.02917
 Balanced Accuracy          0.6080       0.514712     0.75061</code></pre>
 </div>
 </div>
-<p>Interpreting the overall statistics:</p>
+<p>Interpreting the overall statistics (see the documentation for the ConfusionMatrix function here: <a href="https://cran.r-project.org/web/packages/caret/caret.pdf" class="uri">https://cran.r-project.org/web/packages/caret/caret.pdf</a>):</p>
 <ul>
 <li><p><strong>Accuracy</strong> is the percent of observations (in this case, households) that are correctly classified.</p></li>
 <li><p><strong>No-information rate</strong> is the accuracy you would achieve if you had no model and you just classified every household as the most common value.</p></li>
@@ -750,12 +788,14 @@ Balanced Accuracy          0.6080       0.514712     0.75061</code></pre>
 <li><p><strong>Positive predictive value</strong> is the probability that a positive prediction will be correct (when the model predicts that a household is vehicle insufficient, how often is that prediction correct?)</p></li>
 <li><p><strong>Negative predictive value</strong> is the probability that a negative prediction will be correct (when the model predicts that a household is <em>not</em> vehicle insufficient, how often is <em>that</em> prediction correct?)</p></li>
 <li><p><strong>Prevalence</strong> is the percent of observations in this category</p></li>
+<li><p><strong>Detection rate</strong> (as used by the author of the Confusion Matrix function) is the frequency with which this category is correctly predicted by the model.</p></li>
+<li><p><strong>Detection prevalence</strong> (as used by the author of the Confusion Matrix function) is the frequency with which this category is predicted by the model.</p></li>
 <li><p><strong>Balanced accuracy</strong> is the average of sensitivity and specificity</p></li>
 </ul>
 </section>
 <section id="your-challenge" class="level2">
 <h2 class="anchored" data-anchor-id="your-challenge">Your challenge:</h2>
-<p>Redo the above analysis. Your regression results are likely to slightly different than the above because you’ll be using a different random number seed.</p>
+<p>Redo the above analysis. Your regression results are likely to slightly different than the above because you’ll be using a different random number seed to draw the sample for your training dataset.</p>
 <p>Can you estimate a vehicle availability model that performs better than this one? You might try a different set of predictor variables and/or a different form of the ones in this model (for example, you could use a continuous density variable, or more density categories).</p>
 <p>Post your analysis code to GitHub and write a memo summarizing your work. Submit the memo via Canvas.</p>
 <p>The memo should clearly document and explain all of your analysis decisions and interpreting the results of the preferred model to explain the influence that household and/or built-environment characteristics have on vehicle availability.</p>
