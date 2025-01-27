@@ -1,7 +1,8 @@
 ---
-title: "P1: Vehicle Availability"
+title: "P2: Vehicle Availability"
 format: 
   html:
+    theme: minty
     toc: true
     toc-location: left
 editor: visual
