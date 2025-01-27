@@ -1,0 +1,1 @@
+* sqlite schema generation scripts

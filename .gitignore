@@ -54,9 +54,7 @@ data/NHTS/perpub.csv
 data/NHTS/trippub.csv
 data/NHTS/vehpub.csv
 
-# All the model subfolders except the readme file 
+# All model input and output
 model/outputs/
-model/code/
 model/inputs/
-model/ui
 
