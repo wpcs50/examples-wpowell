@@ -1,0 +1,375 @@
+---
+title: "P2: Vehicle Availability"
+format: 
+  html:
+    theme: minty
+    toc: true
+    toc-location: left
+editor: visual
+---
+
+Setupo
+
+## Load libraries
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(here)
+library(mlogit)
+library(knitr)
+library(caret)
+library(stargazer)
+```
+
+Load `mlogit_helpers.R` file in the GitHub repo.
+
+```{r}
+here("code",
+     "mlogit_helpers.R") |>
+  source()
+```
+
+Function for selecting rows of a dataset based on their ID value not being in a specified list.
+
+```{r}
+'%!in%' <- function(x,y)!('%in%'(x,y))
+```
+
+## Load dataset
+
+This analysis uses household-level data from the 2017 National Household Travel Survey.
+
+```{r}
+hh_data <- here("data",
+                "NHTS",
+                "hhpub.csv") |>
+  read_csv(show_col_types = FALSE)
+
+hh_data_full <- hh_data
+```
+
+NHTS files from: [https://nhts.ornl.gov/assets/2016/download/csv.zip](#0){.uri},
+
+Once you've done that, you can load person-level data.
+
+```{r}
+person_data <- here("data",
+                    "NHTS",
+                    "perpub.csv") |>
+  read_csv(show_col_types = FALSE)
+```
+
+## Choose variables
+
+TDM23 Structures and Performance report (<https://ctps.org/pub/tdm23_sc/tdm23.1.0/TDM23_Structures%20and%20Performance.pdf>) provides details on the vehicle availability sub-model of the TDM23 model (beginning on page 65).
+
+2017 NHTS Variable Descriptions: <https://nhts.ornl.gov/tables09/CodebookBrowser.aspx>
+
+Load needed variables from HH data
+
+```{r}
+hh_data <- hh_data |>
+  select(WRKCOUNT,
+         DRVRCNT,
+         HHVEHCNT,
+         HHSIZE,
+         NUMADLT,
+         HHFAMINC,
+         HBPPOPDN,
+         HOUSEID, 
+         HOMEOWN, 
+         RAIL,
+         HBHUR)
+```
+
+Load needed variables from person data
+
+```{r}
+person_data <- person_data |>
+  select(HOUSEID,
+         R_AGE,
+         WORKER,
+         DRIVER)
+```
+
+### Outcome: Vehicle availability
+
+Our vehicle availability outcome will be a categorical variable with three categories:
+
+-   Zero vehicles
+
+-   Insufficient vehicles (fewer vehicles than drivers)
+
+-   Sufficient vehicles (at least as many vehicles as drivers)
+
+```{r}
+hh_data <- hh_data |>
+  mutate(veh_avail = case_when(HHVEHCNT == 0 ~ "Zero",
+                               DRVRCNT > HHVEHCNT ~ "Insuff.",
+                               TRUE ~ "Suff."))
+```
+
+### Predictors
+
+```{r, message=FALSE}
+# Number of children
+hh_data <- hh_data |>
+  mutate(n_child = HHSIZE - NUMADLT)
+
+# Number of seniors
+n_seniors <- person_data |>
+  mutate(is_senior = R_AGE > 64) |>
+  group_by(HOUSEID) |>
+  summarise(n_seniors = sum(is_senior))
+
+hh_data <- hh_data |>
+  left_join(n_seniors)
+
+# Three drivers
+hh_data <- hh_data |>
+  mutate(three_drivers = DRVRCNT > 2)
+
+# Number of drivers beyond 2
+hh_data <- hh_data |>
+  mutate(n_extra_drivers = ifelse(three_drivers, DRVRCNT - 2, 0))
+
+# Income
+hh_data <- hh_data |>
+  mutate(HHFAMINC = as.numeric(HHFAMINC)) |>
+  filter(HHFAMINC > 0) |>
+  mutate(income = case_when(HHFAMINC < 4 ~ "low",
+                             HHFAMINC < 5 & HHSIZE > 1 ~ "low",
+                             HHFAMINC < 6 & HHSIZE > 3 ~ "low",
+                             HHFAMINC < 7 & HHSIZE > 5 ~ "low",
+                             HHFAMINC < 8 & HHSIZE > 7 ~ "low",
+                             HHFAMINC > 8 ~ "high",
+                            TRUE ~ "medium")) |>
+    mutate(income = factor(income, levels = c("medium", "low", "high")))
+
+# Non-worker driver
+non_work_driver <- person_data |>
+  mutate(non_work_driver = WORKER == "02" & DRIVER == "01") |>
+  group_by(HOUSEID) |>
+  summarise(non_work_driver = max(non_work_driver))
+
+hh_data <- hh_data |>
+  left_join(non_work_driver)
+
+# Density
+hh_data <- hh_data |>
+  filter(HBPPOPDN > 0) |>
+  mutate(density = case_when(HBPPOPDN < 7000 ~ "Low",
+                             HBPPOPDN < 10000 ~ "Medium",
+                             TRUE ~ "High"))
+
+# HH Rents
+hh_data <- hh_data |>
+  mutate(HOMEOWN = as.numeric(HOMEOWN)) |>
+  filter(HOMEOWN > 0) |>
+  mutate(renter = case_when(HOMEOWN == 2 ~ 1,
+                            TRUE ~ 0))
+# In MSA with heavy rail
+hh_data <- hh_data |>
+  mutate(RAIL = as.numeric(RAIL)) |>
+  filter(RAIL > 0) |>
+  mutate(rail_msa = case_when(RAIL == 2 ~ 0,
+                            TRUE ~ 1))
+
+# Urban block group
+hh_data <- hh_data |>
+  filter(HBHUR != "-9") |>
+  mutate(urbanbg = case_when(HBHUR == "U" ~ 1,
+                            TRUE ~ 0))
+
+# Urban block group in MSA with heavy rail
+hh_data <- hh_data |>
+  mutate(urbanbg_rail = case_when((urbanbg == 1 & rail_msa == 1) ~ 1,
+                                  TRUE ~ 0))
+```
+
+## Prepare data
+
+**Drop the variables you won't be using**
+
+```{r}
+hh_data <- hh_data |>
+  select(HOUSEID,
+         veh_avail,
+         WRKCOUNT,
+         n_child,
+         n_seniors,
+         n_extra_drivers,
+         three_drivers,
+         non_work_driver,
+         income,
+         density,
+         renter,
+         rail_msa,
+         urbanbg,
+         urbanbg_rail)
+
+```
+
+**Create training and test datasets**
+
+```{r}
+# Original Seed
+# set.seed(3775668)
+
+set.seed(615661801)
+
+hh_data_train_ids <- sample(hh_data$HOUSEID, 
+                        size = ceiling(nrow(hh_data)/2))
+
+hh_data_train <- hh_data |>
+  filter(HOUSEID %in% hh_data_train_ids)
+
+hh_data_test <- hh_data |>
+  filter(HOUSEID %!in% hh_data_train_ids)
+```
+
+**Create dfidx data**
+
+```{r}
+
+veh_dfidx_train <- fn_make_dfidx(hh_data_train,
+                                "HOUSEID",
+                                "veh_avail")
+
+veh_dfidx_test <- fn_make_dfidx(hh_data_test,
+                                "HOUSEID",
+                                "veh_avail")
+```
+
+## TDM Model
+
+### Estimate model
+
+Now we can estimate our multinomial logistic regression using the `mlogit` function.
+
+```{r}
+
+model_veh <- mlogit(choice ~ 0 | 
+                      WRKCOUNT +
+                      n_child +
+                      n_seniors +
+                      n_extra_drivers +
+                      three_drivers + 
+                      non_work_driver +
+                      income +
+                      density | 0,
+                           veh_dfidx_train,
+                           reflevel = "Suff.")
+
+```
+
+And now we can take a look at the results of our model.
+
+```{r}
+summary(model_veh)
+```
+
+### Predicting probabilities
+
+```{r, message=FALSE}
+predicts_test <- predict(model_veh, veh_dfidx_test) |>
+  as.data.frame() |>
+  rownames_to_column("HOUSEID") |>
+  mutate(HOUSEID = as.numeric(HOUSEID)) |>
+  left_join(hh_data_test)
+```
+
+### Checking model reliability and accuracy
+
+Now we can check how accurate and reliable our model is on the test dataset. First, I'll designate the alternative with the highest predicted probability as the "most likely" choice.
+
+```{r}
+predicts_test <- predicts_test |>
+  mutate(most_likely = case_when((Suff. > Insuff.) & (Suff. > Zero) ~ "Suff.",
+                                 (Zero > Insuff.) & (Zero > Suff.) ~ "Zero",
+                                 TRUE ~ "Insuff.")) 
+```
+
+Convert the `most_likely` and `veh_avail` variables from strings to factors
+
+```{r}
+predicts_test <- predicts_test |>
+  mutate(most_likely = factor(most_likely, 
+                              levels = c("Suff.", "Insuff.", "Zero"))) |>
+  mutate(veh_avail = factor(veh_avail,
+                            levels = c("Suff.", "Insuff.", "Zero"))) |>
+  mutate(correct = veh_avail == most_likely)
+
+
+```
+
+And now, I can use the `confusionMatrix` function to generate some accuracy and reliability statistics.
+
+```{r}
+confusionMatrix(data = predicts_test$most_likely,
+                reference = predicts_test$veh_avail)
+```
+
+## Alternative Model:
+
+### Estimate model
+
+```{r}
+model_veh_2 <- mlogit(choice ~ 0 | 
+                      WRKCOUNT +
+                      n_child +
+                      n_seniors +
+                      n_extra_drivers +
+                      three_drivers + 
+                      non_work_driver +
+                      income +
+                      density +
+                      renter + 
+                      urbanbg_rail | 0,
+                           veh_dfidx_train,
+                           reflevel = "Suff.")
+```
+
+And now we can take a look at the results of our model.
+
+```{r}
+summary(model_veh_2)
+```
+
+```{r}
+stargazer(model_veh, model_veh_2, type="text")
+```
+
+### Predicting probabilities
+
+```{r, message=FALSE}
+predicts_test_2 <- predict(model_veh_2, veh_dfidx_test) |>
+  as.data.frame() |>
+  rownames_to_column("HOUSEID") |>
+  mutate(HOUSEID = as.numeric(HOUSEID)) |>
+  left_join(hh_data_test)
+```
+
+### Checking model reliability and accuracy
+
+```{r}
+predicts_test_2 <- predicts_test_2 |>
+  mutate(most_likely = case_when((Suff. > Insuff.) & (Suff. > Zero) ~ "Suff.",
+                                 (Zero > Insuff.) & (Zero > Suff.) ~ "Zero",
+                                 TRUE ~ "Insuff.")) 
+```
+
+```{r}
+predicts_test_2 <- predicts_test_2 |>
+  mutate(most_likely = factor(most_likely, 
+                              levels = c("Suff.", "Insuff.", "Zero"))) |>
+  mutate(veh_avail = factor(veh_avail,
+                            levels = c("Suff.", "Insuff.", "Zero"))) |>
+  mutate(correct = veh_avail == most_likely)
+
+```
+
+```{r}
+confusionMatrix(data = predicts_test_2$most_likely,
+                reference = predicts_test_2$veh_avail)
+```
